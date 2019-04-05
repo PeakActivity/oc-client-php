@@ -30,26 +30,38 @@ class ComponentDataRetriever
             $components = $this->components;
         }
 
-        if (1 < count($components)) {
+        $mappingUtils = new MappingUtils();
+
+        $httpMethod = (1 < count($components)) ? "post" : "get";
+        //only allow them to define an httpMethod if there is one component
+        if(count($components) === 1){
+            $tmp = $mappingUtils->arrayToComponent($components[0]);
+            if($tmp ->getParameters() && isset($tmp ->getParameters()['httpMethod']))  {
+                $targetMethod = strtolower($tmp ->getParameters()['httpMethod']);
+                if($targetMethod === 'post'){
+                    $httpMethod = $targetMethod;
+                }
+            }
+        }
+
+        if(strtolower($httpMethod) === 'post'){
             $compsArr = [];
             $response = json_decode($this->performPost($components));
-
             if (!$response) {
                 return;
             }
-
             foreach ($response as $comp) {
                 $compsArr[] = $comp->response->html;
             }
-
             return $compsArr;
         }
 
-        $mappingUtils = new MappingUtils();
-        $response = json_decode($this->performGet(
-            $mappingUtils->arrayToComponent($components[0])
-        ));
-
+        $response = json_decode(
+            $this->performGet (
+                $mappingUtils->arrayToComponent($components[0])
+            )
+        );
+       
         if ($response) {
             return $response->html;
         }
